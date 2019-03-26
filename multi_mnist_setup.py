@@ -14,10 +14,11 @@ from numpy import array, int8, uint8, zeros
 import pickle
 
 
-MIN = 2
-MAX = 4
+MIN = 4
+MAX = 5
 SIZE = 28
-IMAGE_LENGTH = (MAX + 2) * SIZE
+ALLOT = MAX+1 
+IMAGE_LENGTH = ALLOT * SIZE
 MNIST_SAMPLES = 60000
 DATA_PATH = "./base_mnist"
 
@@ -223,11 +224,65 @@ def create_rand_multi_mnist(samples=60000, dataset="training", noise=False):
     return new_images, new_labels
 
 
+def create_rand_multi_mnist2(samples=60000, dataset="training", noise=False):
+    """ Create a dataset where multiple (MIN to MAX) random MNIST digits are randomly located in a long image. """
+    # Extract images and labels from base MNIST files
+    images, labels = load_mnist(dataset)
+    new_images = []
+    new_labels = []
+    print(images.shape)
+    print(labels.shape)
+
+    # For however many samples...
+    for sample in range(samples):
+        # 1) Select a number of labels to include (MIN to MAX):
+        n_labels = MIN + random.randrange(1 + (MAX - MIN))
+        # 2) Randomly select that number of samples from MNIST training set:
+        rand_indices = [random.randrange(MNIST_SAMPLES) for i in range(n_labels)]
+        # 3) Create the new label:
+        new_label = np.zeros([10])
+        for index in rand_indices:
+            new_label[labels[index][0]] = 1.0
+
+
+        # 4) Choose the starting positions for however many images we're copying in
+        #    Select n_labels random positions, check if they're allowed, if not, try again
+        #    Since we only choose starting positions not too close to the end, just need to check their
+        #    proximity to the other starting positions.
+
+        squares = random.sample(range(0,ALLOT**2), n_labels)
+        start_positions = []
+        for square in squares:
+            start_positions.append((int(square/ALLOT)*SIZE,(square%ALLOT)*SIZE))
+
+        # 5) Last part, actually copy in the images where they are needed:
+        if noise:
+            new_image = np.random.randint(256, size=(IMAGE_LENGTH, IMAGE_LENGTH))
+        else:
+            new_image = np.zeros([IMAGE_LENGTH, IMAGE_LENGTH])
+
+        for (start_posx, start_posy), index in zip(start_positions, rand_indices):
+            for row in range(SIZE):
+                for col in range(SIZE):
+                    new_image[start_posx + row][start_posy + col] = images[index][row][col]
+
+        #new_image = new_image.flatten()
+
+        new_images.append(new_image)
+        new_labels.append(new_label)
+        
+    new_images = np.array(new_images)
+    new_labels = np.array(new_labels)
+
+    return new_images, new_labels
+
+
+
 if __name__ == "__main__":
     random.seed(1234)
 
     # images, labels = create_rand_single_mnist(dataset="training", samples=60000)
-    images, labels = create_rand_multi_mnist(dataset="training", samples=60000)
+    images, labels = create_rand_multi_mnist2(dataset="training", samples=60000)
 
 
     # writer = tf.python_io.TFRecordWriter(os.path.join(DATA_PATH, "train_mnist_rand_multi.tfrecords"))
@@ -236,18 +291,16 @@ if __name__ == "__main__":
     for example_id in range(images.shape[0]):
         features = images[example_id]
         label = labels[example_id]
-        print(label)
+        # print(label)
         pkl_images.append(features)
         pkl_labels.append(label)
 
 
-    with open('multi_images.pkl', 'wb') as f1:
+    with open('multi_images2.pkl', 'wb') as f1:
         pickle.dump(pkl_images, f1)
-    with open('multi_labels.pkl', 'wb') as f2:
+    with open('multi_labels2.pkl', 'wb') as f2:
         pickle.dump(pkl_labels, f2)
 
-
-        ## pkl dump this
 
         # # Construct example proto object
         # example = tf.train.Example(
