@@ -11,6 +11,8 @@ import tensorflow as tf
 import random
 from array import array as pyarray
 from numpy import array, int8, uint8, zeros
+import pickle
+
 
 MIN = 2
 MAX = 4
@@ -66,7 +68,7 @@ def create_small_single_mnist(samples=60000, dataset="training"):
     new_labels = []
 
     if samples > len(images):
-        print "There aren't that many images in the MNIST {} dataset!".format(dataset)
+        print("There aren't that many images in the MNIST dataset! "+str(dataset))
         return
 
     # For however many samples...
@@ -101,7 +103,7 @@ def create_single_mnist(samples=60000, dataset="training", noise=False):
     new_labels = []
 
     if samples > len(images):
-        print "There aren't that many images in the MNIST {} dataset!".format(dataset)
+        print("There aren't that many images in the MNIST dataset! "+str(dataset))
         return
 
     # For however many samples...
@@ -139,7 +141,7 @@ def create_rand_single_mnist(samples=60000, dataset="training", noise=False):
     new_labels = []
 
     if samples > len(images):
-        print "There aren't that many images in the MNIST {} dataset!".format(dataset)
+        print("There aren't that many images in the MNIST dataset! "+str(dataset))
         return
 
     # For however many samples...
@@ -224,30 +226,46 @@ def create_rand_multi_mnist(samples=60000, dataset="training", noise=False):
 if __name__ == "__main__":
     random.seed(1234)
 
-    images, labels = create_rand_single_mnist(dataset="training", samples=60000)
+    # images, labels = create_rand_single_mnist(dataset="training", samples=60000)
+    images, labels = create_rand_multi_mnist(dataset="training", samples=60000)
 
-    writer = tf.python_io.TFRecordWriter(os.path.join(DATA_PATH, "train_mnist_rand_single.tfrecords"))
+
+    # writer = tf.python_io.TFRecordWriter(os.path.join(DATA_PATH, "train_mnist_rand_multi.tfrecords"))
+    pkl_images= []
+    pkl_labels = []
     for example_id in range(images.shape[0]):
         features = images[example_id]
         label = labels[example_id]
+        print(label)
+        pkl_images.append(features)
+        pkl_labels.append(label)
 
-        # Construct example proto object
-        example = tf.train.Example(
-            # Example contains a Features proto object
-            features=tf.train.Features(
-                # Features contains a map of string to Feature proto objects
-                feature={
-                    # A Feature contains one of either a int64_list,
-                    # float_list, or bytes_list
-                    'label': tf.train.Feature(
-                        int64_list=tf.train.Int64List(value=label.astype("int64"))),
-                    'image': tf.train.Feature(
-                        int64_list=tf.train.Int64List(value=features.astype("int64"))),
-                }
-            )
-        )
-        # use the proto object to serialize the example to a string
-        serialized = example.SerializeToString()
-        # write the serialized object to disk
-        writer.write(serialized)
+
+    with open('multi_images.pkl', 'wb') as f1:
+        pickle.dump(pkl_images, f1)
+    with open('multi_labels.pkl', 'wb') as f2:
+        pickle.dump(pkl_labels, f2)
+
+
+        ## pkl dump this
+
+        # # Construct example proto object
+        # example = tf.train.Example(
+        #     # Example contains a Features proto object
+        #     features=tf.train.Features(
+        #         # Features contains a map of string to Feature proto objects
+        #         feature={
+        #             # A Feature contains one of either a int64_list,
+        #             # float_list, or bytes_list
+        #             'label': tf.train.Feature(
+        #                 int64_list=tf.train.Int64List(value=label.astype("int64"))),
+        #             'image': tf.train.Feature(
+        #                 int64_list=tf.train.Int64List(value=features.astype("int64"))),
+        #         }
+        #     )
+        # )
+        # # use the proto object to serialize the example to a string
+        # serialized = example.SerializeToString()
+        # # write the serialized object to disk
+        # writer.write(serialized)
 
